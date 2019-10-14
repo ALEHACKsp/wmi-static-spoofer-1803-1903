@@ -1,4 +1,33 @@
 #pragma once
+#include <ntddk.h>
+#include <wdf.h>
+#include <intrin.h>
+#include <stdlib.h>
+#include <Ntstrsafe.h>
+
+#define RegDevIntOFF 0x1A838 //RaidUnitRegisterInterfaces in storport.sys SIG: 48 89 5C 24 ? 55 56 57 48 83 EC 50
+#define MAX_HDDS 10
+#define SERIAL_MAX_LENGTH 15
+
+CHAR HDDSPOOF_BUFFER[MAX_HDDS][32] = { 0x20 };
+CHAR HDDORG_BUFFER[MAX_HDDS][32] = { 0 };
+
+typedef struct _VendorInfo
+{
+	char pad_0x0000[0x8];
+	char Info[64];
+} VendorInfo;
+
+typedef struct _HDD_EXTENSION
+{
+	char pad_0x0000[0x68];
+	VendorInfo* pVendorInfo;
+	char pad_0x0068[0x8];
+	char* pHDDSerial;
+} *PHDD_EXTENSION;
+
+typedef __int64(__fastcall* RaidUnitRegisterInterfaces)(PHDD_EXTENSION a1);
+RaidUnitRegisterInterfaces pRegDevInt = NULL;
 
 NTSYSAPI ULONG RtlRandomEx(
 	PULONG Seed
@@ -162,7 +191,7 @@ UINT64 GetKernelAddress(PCHAR name)
 
 	PSYSTEM_MODULE_INFORMATION pModuleList;
 
-	pModuleList = (PSYSTEM_MODULE_INFORMATION)ExAllocatePoolWithTag(NonPagedPool, neededSize, POOLTAG01);
+	pModuleList = (PSYSTEM_MODULE_INFORMATION)ExAllocatePool(NonPagedPool, neededSize);
 	if (pModuleList == NULL)
 	{
 		return FALSE;
@@ -187,7 +216,7 @@ UINT64 GetKernelAddress(PCHAR name)
 			break;
 	}
 
-	ExFreePoolWithTag(pModuleList, POOLTAG01);
+	ExFreePool(pModuleList);
 
 	return address;
 }

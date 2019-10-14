@@ -1,28 +1,9 @@
-#pragma once
-CHAR HDDSPOOF_BUFFER[MAX_HDDS][32] = { 0x20 };
-CHAR HDDORG_BUFFER[MAX_HDDS][32] = { 0 };
+#include "imports.h"
 
-typedef struct _VendorInfo
+void spoof_drives()
 {
-	char pad_0x0000[0x8];
-	char Info[64];
-} VendorInfo;
- 
-typedef struct _HDD_EXTENSION
-{
-	char pad_0x0000[0x68];
-	VendorInfo* pVendorInfo;
-	char pad_0x0068[0x8];
-	char* pHDDSerial;
-} *PHDD_EXTENSION;
+	INT count = 0;
 
-typedef __int64(__fastcall *RaidUnitRegisterInterfaces)(PHDD_EXTENSION a1);
-RaidUnitRegisterInterfaces pRegDevInt = NULL;
-
-INT HDD_count = 0;
-
-void SpoofHDD()
-{
 	UINT64 address = GetKernelAddress("storport.sys");
 
 	pRegDevInt = address + RegDevIntOFF;
@@ -48,24 +29,32 @@ void SpoofHDD()
 			CHAR HDDSPOOFED_TMP[32] = { 0x0 };
 			randstring(&HDDSPOOFED_TMP, SERIAL_MAX_LENGTH - 1);
 
-			//Can be optimised...
 			for (int i = 1; i <= SERIAL_MAX_LENGTH + 1; i = i + 2)
 			{
-				memcpy(&HDDORG_BUFFER[HDD_count][i - 1], &pDeviceHDD->pHDDSerial[i], sizeof(CHAR));
-				memcpy(&HDDORG_BUFFER[HDD_count][i], &pDeviceHDD->pHDDSerial[i - 1], sizeof(CHAR));
+				memcpy(&HDDORG_BUFFER[count][i - 1], &pDeviceHDD->pHDDSerial[i], sizeof(CHAR));
+				memcpy(&HDDORG_BUFFER[count][i], &pDeviceHDD->pHDDSerial[i - 1], sizeof(CHAR));
 
-				memcpy(&HDDSPOOF_BUFFER[HDD_count][i - 1], &HDDSPOOFED_TMP[i], sizeof(CHAR));
-				memcpy(&HDDSPOOF_BUFFER[HDD_count][i], &HDDSPOOFED_TMP[i - 1], sizeof(CHAR));
+				memcpy(&HDDSPOOF_BUFFER[count][i - 1], &HDDSPOOFED_TMP[i], sizeof(CHAR));
+				memcpy(&HDDSPOOF_BUFFER[count][i], &HDDSPOOFED_TMP[i - 1], sizeof(CHAR));
 			}
 
 			RtlStringCchPrintfA(pDeviceHDD->pHDDSerial, SERIAL_MAX_LENGTH + 1, "%s", &HDDSPOOFED_TMP);
 
-			//reset the registry entries to the faked serials
 			pRegDevInt(pDeviceHDD);
 
-			HDD_count++;
+			count++;
 		}
 
 		pDevice = pDevice->NextDevice;
 	}
 }
+
+NTSTATUS DriverEntry(
+	_In_ PDRIVER_OBJECT  DriverObject, 
+	_In_ PUNICODE_STRING RegistryPath)
+{
+	spoof_drives();
+
+	return STATUS_SUCCESS;
+}
+

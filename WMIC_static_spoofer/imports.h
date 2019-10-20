@@ -12,6 +12,12 @@
 CHAR HDDSPOOF_BUFFER[MAX_HDDS][32] = { 0x20 };
 CHAR HDDORG_BUFFER[MAX_HDDS][32] = { 0 };
 
+typedef NTSTATUS(__fastcall* DISK_FAIL_PREDICTION)(PVOID device_extension, BYTE enable);
+typedef NTSTATUS(__fastcall* RU_REGISTER_INTERFACES)(PVOID device_extension);
+extern POBJECT_TYPE* IoDriverObjectType;
+NTKERNELAPI NTSTATUS ObReferenceObjectByName(IN PUNICODE_STRING ObjectName, IN ULONG Attributes, IN PACCESS_STATE PassedAccessState, IN ACCESS_MASK DesiredAccess, IN POBJECT_TYPE ObjectType, IN KPROCESSOR_MODE AccessMode, IN OUT PVOID ParseContext, OUT PVOID* Object);
+NTSTATUS NTAPI ZwQuerySystemInformation(ULONG InfoClass, PVOID Buffer, ULONG Length, PULONG ReturnLength);
+
 typedef struct _VendorInfo
 {
 	char pad_0x0000[0x8];
@@ -170,12 +176,6 @@ typedef struct _SYSTEM_MODULE_INFORMATION   // Information Class 11
 	ULONG_PTR ulModuleCount;
 	SYSTEM_MODULE Modules[1];
 } SYSTEM_MODULE_INFORMATION, *PSYSTEM_MODULE_INFORMATION;
-
-NTSTATUS ZwQuerySystemInformation(
-	IN SYSTEM_INFORMATION_CLASS SystemInformationClass,
-	IN OUT PVOID SystemInformation,
-	IN ULONG SystemInformationLength,
-	OUT PULONG ReturnLength OPTIONAL);
 
 UINT64 GetKernelAddress(PCHAR name)
 {

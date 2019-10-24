@@ -68,27 +68,6 @@ typedef __int64(__fastcall* RaidUnitRegisterInterfaces1903)(PHDD_EXTENSION1903 a
 typedef __int64(__fastcall* RaidUnitRegisterInterfaces1809)(PHDD_EXTENSION1809 a1);
 typedef __int64(__fastcall* RaidUnitRegisterInterfaces1803)(PHDD_EXTENSION1803 a1);
 
-NTSYSAPI ULONG RtlRandomEx(
-	PULONG Seed
-);
-
-void randstring(char *randomString, size_t length) {
-
-	static char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-
-	ULONG seed = KeQueryTimeIncrement();
-
-	if (randomString)
-	{
-		for (int n = 0; n <= length; n++)
-		{
-			int key = RtlRandomEx(&seed) % (int)(sizeof(charset) - 1);
-			randomString[n] = charset[key];
-		}
-		//randomString[length] = '\0';
-	}
-}
-
 typedef enum _SYSTEM_INFORMATION_CLASS
 {
 	SystemInformationClassMin = 0,
@@ -210,46 +189,52 @@ typedef struct _SYSTEM_MODULE_INFORMATION   // Information Class 11
 	SYSTEM_MODULE Modules[1];
 } SYSTEM_MODULE_INFORMATION, *PSYSTEM_MODULE_INFORMATION;
 
-UINT64 GetKernelAddress(PCHAR name)
+extern "C"
 {
-	NTSTATUS status = STATUS_SUCCESS;
-	ULONG neededSize = 0;
-
-	ZwQuerySystemInformation(
-		SystemModuleInformation,
-		&neededSize,
-		0,
-		&neededSize
+	NTKERNELAPI NTSTATUS MmCopyVirtualMemory(
+		IN PEPROCESS		SourceProcess,
+		IN PVOID			SourceAddress,
+		IN PEPROCESS		TargetProcess,
+		IN PVOID			TargetAddress,
+		IN SIZE_T			BufferSize,
+		IN KPROCESSOR_MODE  PreviousMode,
+		OUT PSIZE_T			ReturnSize
 	);
 
-	PSYSTEM_MODULE_INFORMATION pModuleList;
-
-	pModuleList = (PSYSTEM_MODULE_INFORMATION)ExAllocatePool(NonPagedPool, neededSize);
-	if (pModuleList == NULL)
-	{
-		return FALSE;
-	}
-
-	status = ZwQuerySystemInformation(SystemModuleInformation,
-		pModuleList,
-		neededSize,
-		0
+	NTKERNELAPI NTSTATUS PsLookupProcessByProcessId(
+		IN HANDLE			ProcessId,
+		OUT PEPROCESS* Process
 	);
-	ULONG i = 0;
 
-	UINT64 address = 0;
+	NTKERNELAPI PVOID PsGetProcessSectionBaseAddress(
+		IN PEPROCESS		Process
+	);
 
-	for (i = 0; i < pModuleList->ulModuleCount; i++)
+	NTKERNELAPI NTSTATUS ZwQuerySystemInformation(
+		SYSTEM_INFORMATION_CLASS SystemInformationClass,
+		PVOID SystemInformation,
+		ULONG SystemInformationLength,
+		PULONG ReturnLength
+	);
+
+	NTSYSAPI ULONG RtlRandomEx(
+		PULONG Seed
+	);
+}
+
+void randstring(char* randomString, size_t length) {
+
+	static char charset[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+
+	ULONG seed = KeQueryTimeIncrement();
+
+	if (randomString)
 	{
-		SYSTEM_MODULE mod = pModuleList->Modules[i];
-
-		address = pModuleList->Modules[i].Base;
-
-		if (strstr(&mod.ImageName, name) != NULL)
-			break;
+		for (int n = 0; n <= length; n++)
+		{
+			int key = RtlRandomEx(&seed) % (int)(sizeof(charset) - 1);
+			randomString[n] = charset[key];
+		}
+		//randomString[length] = '\0';
 	}
-
-	ExFreePool(pModuleList);
-
-	return address;
 }

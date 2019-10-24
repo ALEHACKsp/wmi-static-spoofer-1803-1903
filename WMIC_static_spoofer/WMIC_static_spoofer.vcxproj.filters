@@ -4,6 +4,6 @@
     <ClInclude Include="imports.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="driver.c" />
+    <ClCompile Include="driver.cpp" />
   </ItemGroup>
 </Project>

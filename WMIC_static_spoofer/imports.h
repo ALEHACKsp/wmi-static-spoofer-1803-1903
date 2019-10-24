@@ -5,7 +5,6 @@
 #include <stdlib.h>
 #include <Ntstrsafe.h>
 
-#define RegDevIntOFF 0x1A838 //RaidUnitRegisterInterfaces in storport.sys SIG: 48 89 5C 24 ? 55 56 57 48 83 EC 50
 #define MAX_HDDS 10
 #define SERIAL_MAX_LENGTH 15
 
@@ -18,22 +17,56 @@ extern POBJECT_TYPE* IoDriverObjectType;
 NTKERNELAPI NTSTATUS ObReferenceObjectByName(IN PUNICODE_STRING ObjectName, IN ULONG Attributes, IN PACCESS_STATE PassedAccessState, IN ACCESS_MASK DesiredAccess, IN POBJECT_TYPE ObjectType, IN KPROCESSOR_MODE AccessMode, IN OUT PVOID ParseContext, OUT PVOID* Object);
 NTSTATUS NTAPI ZwQuerySystemInformation(ULONG InfoClass, PVOID Buffer, ULONG Length, PULONG ReturnLength);
 
-typedef struct _VendorInfo
+// 1903
+typedef struct _VendorInfo1903
 {
 	char pad_0x0000[0x8];
 	char Info[64];
-} VendorInfo;
+} VendorInfo1903;
 
-typedef struct _HDD_EXTENSION
+typedef struct _HDD_EXTENSION1903
 {
 	char pad_0x0000[0x68];
-	VendorInfo* pVendorInfo;
+	VendorInfo1903* pVendorInfo;
 	char pad_0x0068[0x8];
 	char* pHDDSerial;
-} *PHDD_EXTENSION;
+} *PHDD_EXTENSION1903;
 
-typedef __int64(__fastcall* RaidUnitRegisterInterfaces)(PHDD_EXTENSION a1);
-RaidUnitRegisterInterfaces pRegDevInt = NULL;
+// 1809
+typedef struct _VendorInfo1809
+{
+	char pad_0x0000[0x8];
+	char Info[64];
+} VendorInfo1809;
+
+typedef struct _HDD_EXTENSION1809
+{
+	char pad_0x0000[0x60];
+	VendorInfo1809* pVendorInfo;
+	char pad_0x0068[0x8];
+	char* pHDDSerial;
+	char pad_0x0078[0x30];
+} *PHDD_EXTENSION1809;
+
+// 1803
+typedef struct _VendorInfo1803
+{
+	char pad_0x0000[0x8];
+	char Info[64];
+} VendorInfo1803;
+
+typedef struct _HDD_EXTENSION1803
+{
+	char pad_0x0000[0x58];
+	VendorInfo1803* pVendorInfo;
+	char pad_0x0068[0x8];
+	char* pHDDSerial;
+	char pad_0x0078[0x30];
+} *PHDD_EXTENSION1803;
+
+typedef __int64(__fastcall* RaidUnitRegisterInterfaces1903)(PHDD_EXTENSION1903 a1);
+typedef __int64(__fastcall* RaidUnitRegisterInterfaces1809)(PHDD_EXTENSION1809 a1);
+typedef __int64(__fastcall* RaidUnitRegisterInterfaces1803)(PHDD_EXTENSION1803 a1);
 
 NTSYSAPI ULONG RtlRandomEx(
 	PULONG Seed
